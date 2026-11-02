@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ItemRepository {
+
     Item save(Item item);
 
     Item update(Item item);
@@ -14,5 +15,5 @@ public interface ItemRepository {
 
     List<Item> findAllByOwnerId(Long ownerId);
 
-    List<Item> findAll();
+    List<Item> search(String text);
 }

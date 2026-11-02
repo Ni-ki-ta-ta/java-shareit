@@ -1,6 +1,7 @@
 package ru.practicum.shareit.item;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.item.dto.ItemDto;
@@ -10,10 +11,9 @@ import ru.practicum.shareit.request.ItemRequestRepository;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserService;
 
-import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ItemServiceImpl implements ItemService {
@@ -24,33 +24,27 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public ItemDto create(Long userId, ItemDto itemDto) {
+        log.info("Создание вещи пользователем с id={}", userId);
+
         User owner = userService.getUserOrThrow(userId);
+        ItemRequest request = findRequest(itemDto.getRequestId());
 
-        validateRequired(itemDto.getName(), "Название вещи не должно быть пустым");
-        validateRequired(itemDto.getDescription(), "Описание вещи не должно быть пустым");
+        Item item = ItemMapper.toItem(itemDto, owner, request);
+        Item saved = itemRepository.save(item);
 
-        if (itemDto.getAvailable() == null) {
-            throw new IllegalArgumentException("Необходимо указать доступность вещи");
-        }
-
-        Item item = new Item(
-                null,
-                itemDto.getName(),
-                itemDto.getDescription(),
-                itemDto.getAvailable(),
-                owner,
-                findRequest(itemDto.getRequestId())
-        );
-
-        return ItemMapper.toItemDto(itemRepository.save(item));
+        log.info("Вещь создана: id={}", saved.getId());
+        return ItemMapper.toItemDto(saved);
     }
 
     @Override
     public ItemDto update(Long userId, Long itemId, ItemDto itemDto) {
+        log.info("Обновление вещи с id={} пользователем с id={}", itemId, userId);
+
         User owner = userService.getUserOrThrow(userId);
         Item item = getItemOrThrow(itemId);
 
         if (!item.getOwner().getId().equals(owner.getId())) {
+            log.warn("Пользователь с id={} не является владельцем вещи с id={}", userId, itemId);
             throw new NotFoundException("Изменять вещь может только её владелец");
         }
 
@@ -78,51 +72,45 @@ public class ItemServiceImpl implements ItemService {
             item.setRequest(findRequest(itemDto.getRequestId()));
         }
 
-        return ItemMapper.toItemDto(itemRepository.update(item));
+        Item updated = itemRepository.update(item);
+
+        log.info("Вещь с id={} обновлена", itemId);
+        return ItemMapper.toItemDto(updated);
     }
 
     @Override
     public ItemDto getById(Long itemId) {
+        log.info("Получение вещи с id={}", itemId);
+
         return ItemMapper.toItemDto(getItemOrThrow(itemId));
     }
 
     @Override
     public List<ItemDto> getByOwner(Long userId) {
+        log.info("Получение списка вещей пользователя с id={}", userId);
+
         userService.getUserOrThrow(userId);
 
-        return itemRepository.findAllByOwnerId(userId)
-                .stream()
+        return itemRepository.findAllByOwnerId(userId).stream()
                 .map(ItemMapper::toItemDto)
                 .toList();
     }
 
     @Override
     public List<ItemDto> search(String text) {
-        if (text == null || text.isBlank()) {
-            return List.of();
-        }
+        log.info("Поиск вещей по тексту: {}", text);
 
-        String query = text.toLowerCase(Locale.ROOT);
-
-        return itemRepository.findAll()
-                .stream()
-                .filter(Item::isAvailable)
-                .filter(item ->
-                        item.getName().toLowerCase(Locale.ROOT).contains(query)
-                                || item.getDescription()
-                                .toLowerCase(Locale.ROOT)
-                                .contains(query)
-                )
-                .sorted(Comparator.comparing(Item::getId))
+        return itemRepository.search(text).stream()
                 .map(ItemMapper::toItemDto)
                 .toList();
     }
 
     private Item getItemOrThrow(Long itemId) {
         return itemRepository.findById(itemId)
-                .orElseThrow(() ->
-                        new NotFoundException("Вещь с id=" + itemId + " не найдена")
-                );
+                .orElseThrow(() -> {
+                    log.warn("Вещь с id={} не найдена", itemId);
+                    return new NotFoundException("Вещь с id=" + itemId + " не найдена");
+                });
     }
 
     private ItemRequest findRequest(Long requestId) {
@@ -131,13 +119,15 @@ public class ItemServiceImpl implements ItemService {
         }
 
         return itemRequestRepository.findById(requestId)
-                .orElseThrow(() ->
-                        new NotFoundException("Запрос с id=" + requestId + " не найден")
-                );
+                .orElseThrow(() -> {
+                    log.warn("Запрос с id={} не найден", requestId);
+                    return new NotFoundException("Запрос с id=" + requestId + " не найден");
+                });
     }
 
     private void validateRequired(String value, String message) {
         if (value == null || value.isBlank()) {
+            log.warn("Ошибка валидации: {}", message);
             throw new IllegalArgumentException(message);
         }
     }
