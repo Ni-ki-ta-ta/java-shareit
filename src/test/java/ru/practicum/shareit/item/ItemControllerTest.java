@@ -73,6 +73,23 @@ class ItemControllerTest {
     }
 
     @Test
+    void shouldRejectBlankOrTooLongCommentText() throws Exception {
+        mockMvc.perform(post("/items/{itemId}/comment", 999999999L)
+                        .header(USER_HEADER, 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"text\":\" \"}"))
+                .andExpect(status().isBadRequest());
+
+        String tooLongText = "a".repeat(2049);
+
+        mockMvc.perform(post("/items/{itemId}/comment", 999999999L)
+                        .header(USER_HEADER, 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"text\":\"" + tooLongText + "\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void shouldReturnNotFoundForUnknownItem() throws Exception {
         mockMvc.perform(get("/items/999999999"))
                 .andExpect(status().isNotFound());
@@ -104,12 +121,18 @@ class ItemControllerTest {
 
         mockMvc.perform(get("/items/{id}", itemId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value(searchWord));
+                .andExpect(jsonPath("$.name").value(searchWord))
+                .andExpect(jsonPath("$.comments").isArray())
+                .andExpect(jsonPath("$.lastBooking").doesNotExist())
+                .andExpect(jsonPath("$.nextBooking").doesNotExist());
 
         mockMvc.perform(get("/items")
                         .header(USER_HEADER, ownerId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(2)));
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].comments").isArray())
+                .andExpect(jsonPath("$[0].lastBooking").hasJsonPath())
+                .andExpect(jsonPath("$[0].nextBooking").hasJsonPath());
 
         mockMvc.perform(get("/items/search")
                         .param("text", searchWord.toUpperCase()))

@@ -1,6 +1,7 @@
 package ru.practicum.shareit.exception;
 
 import jakarta.validation.ConstraintViolationException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -20,8 +21,8 @@ public class ErrorHandler {
         return response(HttpStatus.NOT_FOUND, exception.getMessage());
     }
 
-    @ExceptionHandler(ConflictException.class)
-    public ResponseEntity<Map<String, String>> handleConflict(ConflictException exception) {
+    @ExceptionHandler({ConflictException.class, DataIntegrityViolationException.class})
+    public ResponseEntity<Map<String, String>> handleConflict(Exception exception) {
         return response(HttpStatus.CONFLICT, exception.getMessage());
     }
 
