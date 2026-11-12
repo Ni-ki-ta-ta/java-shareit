@@ -68,7 +68,6 @@ public class ItemServiceImpl implements ItemService {
     public ItemWithBookingsDto getById(Long itemId) {
         Item item = getItemOrThrow(itemId);
         ItemWithBookingsDto dto = new ItemWithBookingsDto(ItemMapper.toItemDto(item));
-        fillBookingMetadata(item.getId(), dto, LocalDateTime.now());
         dto.setComments(getComments(itemId));
         return dto;
     }
