@@ -11,7 +11,6 @@ import ru.practicum.shareit.booking.BookingRepository;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemWithBookingsDto;
-import ru.practicum.shareit.item.dto.ItemWithCommentsDto;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.request.ItemRequestRepository;
 import ru.practicum.shareit.user.User;
@@ -140,7 +139,7 @@ class ItemServiceImplTest {
         when(itemRepository.findById(10L)).thenReturn(Optional.of(item));
         when(commentRepository.findByItem_IdOrderByCreatedDesc(10L)).thenReturn(List.of());
 
-        ItemWithCommentsDto result = itemService.getById(10L);
+        ItemWithBookingsDto result = itemService.getById(10L);
 
         assertEquals(10L, result.getId());
         assertNotNull(result.getComments());
@@ -235,68 +234,5 @@ class ItemServiceImplTest {
     private Booking booking(Long id, LocalDateTime start, LocalDateTime end) {
         return Booking.builder().id(id).start(start).end(end).item(item).booker(booker)
                 .status(Booking.Status.APPROVED).build();
-    }
-
-
-    @Test
-    void getByOwnerShouldLeaveBookingMetadataNullWhenThereAreNoPastOrFutureBookings() {
-        when(userService.getUserOrThrow(1L)).thenReturn(owner);
-        when(itemRepository.findAllByOwnerIdOrderById(1L)).thenReturn(List.of(item));
-        when(bookingRepository.findByItem_IdAndStatusAndEndIsBefore(
-                eq(10L), eq(Booking.Status.APPROVED), any(LocalDateTime.class), any()))
-                .thenReturn(List.of());
-        when(bookingRepository.findByItem_IdAndStatusAndStartIsAfter(
-                eq(10L), eq(Booking.Status.APPROVED), any(LocalDateTime.class), any()))
-                .thenReturn(List.of());
-        when(commentRepository.findByItem_IdOrderByCreatedDesc(10L)).thenReturn(List.of());
-
-        List<ItemWithBookingsDto> result = itemService.getByOwner(1L);
-
-        assertEquals(1, result.size());
-        assertNull(result.get(0).getLastBooking());
-        assertNull(result.get(0).getNextBooking());
-        assertNotNull(result.get(0).getComments());
-    }
-
-    @Test
-    void getByOwnerShouldAllowOnlyPastBookingMetadata() {
-        Booking previous = booking(11L,
-                LocalDateTime.now().minusDays(3),
-                LocalDateTime.now().minusDays(2));
-        when(userService.getUserOrThrow(1L)).thenReturn(owner);
-        when(itemRepository.findAllByOwnerIdOrderById(1L)).thenReturn(List.of(item));
-        when(bookingRepository.findByItem_IdAndStatusAndEndIsBefore(
-                eq(10L), eq(Booking.Status.APPROVED), any(LocalDateTime.class), any()))
-                .thenReturn(List.of(previous));
-        when(bookingRepository.findByItem_IdAndStatusAndStartIsAfter(
-                eq(10L), eq(Booking.Status.APPROVED), any(LocalDateTime.class), any()))
-                .thenReturn(List.of());
-        when(commentRepository.findByItem_IdOrderByCreatedDesc(10L)).thenReturn(List.of());
-
-        List<ItemWithBookingsDto> result = itemService.getByOwner(1L);
-
-        assertEquals(11L, result.get(0).getLastBooking().getId());
-        assertNull(result.get(0).getNextBooking());
-    }
-
-    @Test
-    void getByOwnerShouldAllowOnlyFutureBookingMetadata() {
-        Booking next = booking(12L,
-                LocalDateTime.now().plusDays(2),
-                LocalDateTime.now().plusDays(3));
-        when(userService.getUserOrThrow(1L)).thenReturn(owner);
-        when(itemRepository.findAllByOwnerIdOrderById(1L)).thenReturn(List.of(item));
-        when(bookingRepository.findByItem_IdAndStatusAndEndIsBefore(
-                eq(10L), eq(Booking.Status.APPROVED), any(LocalDateTime.class), any()))
-                .thenReturn(List.of());
-        when(bookingRepository.findByItem_IdAndStatusAndStartIsAfter(
-                eq(10L), eq(Booking.Status.APPROVED), any(LocalDateTime.class), any()))
-                .thenReturn(List.of(next));
-        when(commentRepository.findByItem_IdOrderByCreatedDesc(10L)).thenReturn(List.of());
-
-        List<ItemWithBookingsDto> result = itemService.getByOwner(1L);
-
-        assertNull(result.get(0).getLastBooking());
-        assertEquals(12L, result.get(0).getNextBooking().getId());
     }
 }

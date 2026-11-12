@@ -12,10 +12,13 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class CommentDto {
+
     private Long id;
+
     @NotBlank(message = "Текст комментария не должен быть пустым")
-    @Size(max = 2048, message = "Текст комментария не должен превышать 2048 символов")
+    @Size(max = 1000, message = "Текст комментария не должен превышать 1000 символов")
     private String text;
+
     private String authorName;
     private LocalDateTime created;
 }

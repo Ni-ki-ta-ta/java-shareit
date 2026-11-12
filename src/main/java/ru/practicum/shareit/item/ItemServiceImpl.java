@@ -13,7 +13,6 @@ import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemWithBookingsDto;
-import ru.practicum.shareit.item.dto.ItemWithCommentsDto;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.request.ItemRequest;
 import ru.practicum.shareit.request.ItemRequestRepository;
@@ -66,9 +65,10 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     @Transactional(readOnly = true)
-    public ItemWithCommentsDto getById(Long itemId) {
+    public ItemWithBookingsDto getById(Long itemId) {
         Item item = getItemOrThrow(itemId);
-        ItemWithCommentsDto dto = new ItemWithCommentsDto(ItemMapper.toItemDto(item));
+        ItemWithBookingsDto dto = new ItemWithBookingsDto(ItemMapper.toItemDto(item));
+        fillBookingMetadata(item.getId(), dto, LocalDateTime.now());
         dto.setComments(getComments(itemId));
         return dto;
     }
@@ -80,12 +80,7 @@ public class ItemServiceImpl implements ItemService {
         LocalDateTime now = LocalDateTime.now();
         return itemRepository.findAllByOwnerIdOrderById(userId).stream().map(item -> {
             ItemWithBookingsDto dto = new ItemWithBookingsDto(ItemMapper.toItemDto(item));
-            List<Booking> previous = bookingRepository.findByItem_IdAndStatusAndEndIsBefore(item.getId(), Booking.Status.APPROVED, now,
-                    org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "start"));
-            List<Booking> next = bookingRepository.findByItem_IdAndStatusAndStartIsAfter(item.getId(), Booking.Status.APPROVED, now,
-                    org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.ASC, "start"));
-            if (!previous.isEmpty()) dto.setLastBooking(toBookingDto(previous.get(0)));
-            if (!next.isEmpty()) dto.setNextBooking(toBookingDto(next.get(0)));
+            fillBookingMetadata(item.getId(), dto, now);
             dto.setComments(getComments(item.getId()));
             return dto;
         }).toList();
@@ -109,6 +104,18 @@ public class ItemServiceImpl implements ItemService {
         }
         Comment saved = commentRepository.save(Comment.builder().text(text).item(item).author(author).created(now).build());
         return toCommentDto(saved);
+    }
+
+
+    private void fillBookingMetadata(Long itemId, ItemWithBookingsDto dto, LocalDateTime now) {
+        List<Booking> previous = bookingRepository.findByItem_IdAndStatusAndEndIsBefore(itemId,
+                Booking.Status.APPROVED, now,
+                org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "start"));
+        List<Booking> next = bookingRepository.findByItem_IdAndStatusAndStartIsAfter(itemId,
+                Booking.Status.APPROVED, now,
+                org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.ASC, "start"));
+        if (!previous.isEmpty()) dto.setLastBooking(toBookingDto(previous.get(0)));
+        if (!next.isEmpty()) dto.setNextBooking(toBookingDto(next.get(0)));
     }
 
     private List<CommentDto> getComments(Long itemId) {

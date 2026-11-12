@@ -16,6 +16,12 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class ErrorHandler {
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<Map<String, String>> handleForbidden(ForbiddenException exception) {
+        return response(HttpStatus.FORBIDDEN, exception.getMessage());
+    }
+
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<Map<String, String>> handleNotFound(NotFoundException exception) {
         return response(HttpStatus.NOT_FOUND, exception.getMessage());
@@ -26,11 +32,18 @@ public class ErrorHandler {
         return response(HttpStatus.CONFLICT, exception.getMessage());
     }
 
-    @ExceptionHandler({IllegalArgumentException.class, MethodArgumentNotValidException.class,
-            ConstraintViolationException.class, HttpMessageNotReadableException.class,
-            MissingRequestHeaderException.class, MethodArgumentTypeMismatchException.class})
+    @ExceptionHandler({
+            IllegalArgumentException.class,
+            MethodArgumentNotValidException.class,
+            ConstraintViolationException.class,
+            HttpMessageNotReadableException.class,
+            MissingRequestHeaderException.class,
+            MethodArgumentTypeMismatchException.class
+    })
     public ResponseEntity<Map<String, String>> handleBadRequest(Exception exception) {
-        String message = exception.getMessage() == null ? "Некорректный запрос" : exception.getMessage();
+        String message = exception.getMessage() == null
+                ? "Некорректный запрос"
+                : exception.getMessage();
         return response(HttpStatus.BAD_REQUEST, message);
     }
 

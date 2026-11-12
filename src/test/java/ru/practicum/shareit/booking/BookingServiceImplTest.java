@@ -8,6 +8,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Sort;
 import ru.practicum.shareit.booking.dto.BookingCreateDto;
+import ru.practicum.shareit.exception.ForbiddenException;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.item.ItemRepository;
 import ru.practicum.shareit.item.model.Item;
@@ -155,7 +156,9 @@ class BookingServiceImplTest {
         Booking booking = booking(5L, Booking.Status.WAITING);
         when(bookingRepository.findById(5L)).thenReturn(Optional.of(booking));
 
-        assertThrows(NotFoundException.class, () -> bookingService.approve(2L, 5L, true));
+        assertThrows(ForbiddenException.class,
+                () -> bookingService.approve(2L, 5L, true));
+
         verify(bookingRepository, never()).save(any());
     }
 

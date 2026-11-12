@@ -9,6 +9,7 @@ import ru.practicum.shareit.booking.dto.BookingBookerDto;
 import ru.practicum.shareit.booking.dto.BookingCreateDto;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.BookingItemDto;
+import ru.practicum.shareit.exception.ForbiddenException;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.item.ItemRepository;
 import ru.practicum.shareit.item.model.Item;
@@ -46,10 +47,19 @@ public class BookingServiceImpl implements BookingService {
     @Transactional
     public BookingDto approve(Long userId, Long bookingId, boolean approved) {
         Booking booking = getBooking(bookingId);
-        if (!booking.getItem().getOwner().getId().equals(userId))
-            throw new NotFoundException("Подтвердить бронирование может только владелец вещи");
-        if (booking.getStatus() != Booking.Status.WAITING)
-            throw new IllegalArgumentException("Можно изменить только ожидающее бронирование");
+
+        if (!booking.getItem().getOwner().getId().equals(userId)) {
+            throw new ForbiddenException(
+                    "Подтвердить бронирование может только владелец вещи"
+            );
+        }
+
+        if (booking.getStatus() != Booking.Status.WAITING) {
+            throw new IllegalArgumentException(
+                    "Можно изменить только ожидающее бронирование"
+            );
+        }
+
         booking.setStatus(approved ? Booking.Status.APPROVED : Booking.Status.REJECTED);
         return toDto(bookingRepository.save(booking));
     }
