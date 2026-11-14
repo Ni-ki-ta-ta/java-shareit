@@ -1,6 +1,7 @@
 package ru.practicum.shareit.exception;
 
 import jakarta.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +15,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+@Slf4j
 @RestControllerAdvice
 public class ErrorHandler {
 
@@ -44,13 +46,17 @@ public class ErrorHandler {
         String message = exception.getMessage() == null
                 ? "Некорректный запрос"
                 : exception.getMessage();
+
         return response(HttpStatus.BAD_REQUEST, message);
     }
 
     private ResponseEntity<Map<String, String>> response(HttpStatus status, String message) {
+        log.warn("Обработка ошибки HTTP {}: {}", status.value(), message);
+
         Map<String, String> body = new LinkedHashMap<>();
         body.put("error", status.getReasonPhrase());
         body.put("description", message);
+
         return ResponseEntity.status(status).body(body);
     }
 }

@@ -1,6 +1,7 @@
 package ru.practicum.shareit.booking;
 
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -32,6 +33,12 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByItem_IdAndStatusAndEndIsBefore(Long itemId, Booking.Status status, LocalDateTime now, Sort sort);
 
     List<Booking> findByItem_IdAndStatusAndStartIsAfter(Long itemId, Booking.Status status, LocalDateTime now, Sort sort);
+
+    @EntityGraph(attributePaths = {"item", "booker"})
+    List<Booking> findByItem_IdInAndStatusAndEndIsBefore(List<Long> itemIds, Booking.Status status, LocalDateTime now);
+
+    @EntityGraph(attributePaths = {"item", "booker"})
+    List<Booking> findByItem_IdInAndStatusAndStartIsAfter(List<Long> itemIds, Booking.Status status, LocalDateTime now);
 
     boolean existsByItem_IdAndBooker_IdAndStatusAndEndIsBefore(Long itemId, Long bookerId, Booking.Status status, LocalDateTime now);
 

@@ -155,15 +155,36 @@ class ItemServiceImplTest {
 
     @Test
     void getByOwnerShouldReturnItemsAndLoadBookingMetadataAndComments() {
-        Booking previous = booking(11L, LocalDateTime.now().minusDays(3), LocalDateTime.now().minusDays(2));
-        Booking next = booking(12L, LocalDateTime.now().plusDays(2), LocalDateTime.now().plusDays(3));
+        Booking previous = booking(
+                11L,
+                LocalDateTime.now().minusDays(3),
+                LocalDateTime.now().minusDays(2)
+        );
+
+        Booking next = booking(
+                12L,
+                LocalDateTime.now().plusDays(2),
+                LocalDateTime.now().plusDays(3)
+        );
+
         when(userService.getUserOrThrow(1L)).thenReturn(owner);
-        when(itemRepository.findAllByOwnerIdOrderById(1L)).thenReturn(List.of(item));
-        when(bookingRepository.findByItem_IdAndStatusAndEndIsBefore(eq(10L), eq(Booking.Status.APPROVED),
-                any(LocalDateTime.class), any())).thenReturn(List.of(previous));
-        when(bookingRepository.findByItem_IdAndStatusAndStartIsAfter(eq(10L), eq(Booking.Status.APPROVED),
-                any(LocalDateTime.class), any())).thenReturn(List.of(next));
-        when(commentRepository.findByItem_IdOrderByCreatedDesc(10L)).thenReturn(List.of());
+        when(itemRepository.findAllByOwnerIdOrderById(1L))
+                .thenReturn(List.of(item));
+
+        when(bookingRepository.findByItem_IdInAndStatusAndEndIsBefore(
+                eq(List.of(10L)),
+                eq(Booking.Status.APPROVED),
+                any(LocalDateTime.class)
+        )).thenReturn(List.of(previous));
+
+        when(bookingRepository.findByItem_IdInAndStatusAndStartIsAfter(
+                eq(List.of(10L)),
+                eq(Booking.Status.APPROVED),
+                any(LocalDateTime.class)
+        )).thenReturn(List.of(next));
+
+        when(commentRepository.findByItem_IdInOrderByCreatedDesc(List.of(10L)))
+                .thenReturn(List.of());
 
         List<ItemWithBookingsDto> result = itemService.getByOwner(1L);
 
@@ -171,6 +192,14 @@ class ItemServiceImplTest {
         assertEquals(11L, result.get(0).getLastBooking().getId());
         assertEquals(12L, result.get(0).getNextBooking().getId());
         assertNotNull(result.get(0).getComments());
+
+        verify(bookingRepository).findByItem_IdInAndStatusAndEndIsBefore(
+                eq(List.of(10L)), eq(Booking.Status.APPROVED), any(LocalDateTime.class));
+
+        verify(bookingRepository).findByItem_IdInAndStatusAndStartIsAfter(
+                eq(List.of(10L)), eq(Booking.Status.APPROVED), any(LocalDateTime.class));
+
+        verify(commentRepository).findByItem_IdInOrderByCreatedDesc(List.of(10L));
     }
 
     @Test

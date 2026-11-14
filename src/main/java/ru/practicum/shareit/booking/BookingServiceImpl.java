@@ -65,7 +65,6 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public BookingDto getById(Long userId, Long bookingId) {
         Booking b = getBooking(bookingId);
         if (!b.getBooker().getId().equals(userId) && !b.getItem().getOwner().getId().equals(userId))
@@ -74,14 +73,12 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<BookingDto> getByBooker(Long userId, BookingState state) {
         userService.getUserOrThrow(userId);
         return select(bookingRepository.findByBooker_Id(userId, NEWEST), state);
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<BookingDto> getByOwner(Long userId, BookingState state) {
         userService.getUserOrThrow(userId);
         return select(bookingRepository.findByItem_Owner_Id(userId, NEWEST), state);
