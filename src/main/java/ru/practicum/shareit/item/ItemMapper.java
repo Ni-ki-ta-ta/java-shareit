@@ -6,28 +6,16 @@ import ru.practicum.shareit.request.ItemRequest;
 import ru.practicum.shareit.user.User;
 
 public final class ItemMapper {
-
     private ItemMapper() {
     }
 
     public static ItemDto toItemDto(Item item) {
-        return new ItemDto(
-                item.getId(),
-                item.getName(),
-                item.getDescription(),
-                item.isAvailable(),
-                item.getRequest() == null ? null : item.getRequest().getId()
-        );
+        return ItemDto.builder().id(item.getId()).name(item.getName()).description(item.getDescription())
+                .available(item.isAvailable()).requestId(item.getRequest() == null ? null : item.getRequest().getId()).build();
     }
 
-    public static Item toItem(ItemDto itemDto, User owner, ItemRequest request) {
-        return new Item(
-                null,
-                itemDto.getName(),
-                itemDto.getDescription(),
-                itemDto.getAvailable(),
-                owner,
-                request
-        );
+    public static Item toItem(ItemDto dto, User owner, ItemRequest request) {
+        return Item.builder().name(dto.getName()).description(dto.getDescription()).available(Boolean.TRUE.equals(dto.getAvailable()))
+                .owner(owner).request(request).build();
     }
 }

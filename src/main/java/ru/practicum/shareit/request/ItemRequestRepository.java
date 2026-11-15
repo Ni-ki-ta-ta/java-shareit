@@ -1,7 +1,6 @@
 package ru.practicum.shareit.request;
 
-import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface ItemRequestRepository {
-    Optional<ItemRequest> findById(Long requestId);
+public interface ItemRequestRepository extends JpaRepository<ItemRequest, Long> {
 }
